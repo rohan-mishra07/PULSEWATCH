@@ -1,0 +1,155 @@
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum MonitorStatus {
+  UP
+  DOWN
+  UNKNOWN
+}
+
+enum CheckStatus {
+  SUCCESS
+  FAILURE
+  TIMEOUT
+}
+
+enum IncidentStatus {
+  OPEN
+  RESOLVED
+}
+
+enum NotificationType {
+  EMAIL
+  WEBHOOK
+}
+
+model User {
+  id           String            @id @default(cuid())
+  name         String
+  email        String            @unique
+  passwordHash String
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  memberships  WorkspaceMember[]
+}
+
+model Workspace {
+  id                   String                @id @default(cuid())
+  name                 String
+  slug                 String                @unique
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  members              WorkspaceMember[]
+  monitors             Monitor[]
+  notificationChannels NotificationChannel[]
+  apiKeys              ApiKey[]
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        WorkspaceRole @default(MEMBER)
+  joinedAt    DateTime      @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+}
+
+model Monitor {
+  id              String        @id @default(cuid())
+  workspaceId     String
+  name            String
+  url             String
+  method          String        @default("GET")
+  intervalSeconds Int           @default(60)
+  timeoutMs       Int           @default(10000)
+  isActive        Boolean       @default(true)
+  status          MonitorStatus @default(UNKNOWN)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  workspace Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  checks    MonitorCheck[]
+  incidents Incident[]
+
+  @@index([workspaceId, isActive])
+}
+
+model MonitorCheck {
+  id             String      @id @default(cuid())
+  monitorId      String
+  status         CheckStatus
+  statusCode     Int?
+  responseTimeMs Int?
+  errorMessage   String?
+  checkedAt      DateTime    @default(now())
+
+  monitor Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+
+  @@index([monitorId, checkedAt])
+}
+
+model Incident {
+  id         String         @id @default(cuid())
+  monitorId  String
+  status     IncidentStatus @default(OPEN)
+  summary    String
+  startedAt  DateTime       @default(now())
+  resolvedAt DateTime?
+
+  monitor Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+
+  @@index([monitorId, status])
+}
+
+model NotificationChannel {
+  id          String           @id @default(cuid())
+  workspaceId String
+  type        NotificationType
+  target      String
+  isEnabled   Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  logs      NotificationLog[]
+}
+
+model NotificationLog {
+  id        String   @id @default(cuid())
+  channelId String
+  message   String
+  status    String
+  sentAt    DateTime @default(now())
+
+  channel NotificationChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@index([channelId, sentAt])
+}
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  workspaceId String
+  name        String
+  keyHash     String    @unique
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
