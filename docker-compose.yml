@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: pulsewatch_dev
       POSTGRES_DB: pulsewatch_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pulsewatch_data:/var/lib/postgresql/data
 
