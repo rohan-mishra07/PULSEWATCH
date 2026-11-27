@@ -1,11 +1,8 @@
-
-import dotenv from "dotenv";
+import "dotenv/config";
 import app from "./app.js";
-
-dotenv.config();
 
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`PulseWatch API running on port ${PORT}`);
+  console.log(`PulseWatch server running on port ${PORT}`);
 });

@@ -37,13 +37,14 @@ enum NotificationType {
 }
 
 model User {
-  id           String            @id @default(cuid())
-  name         String
-  email        String            @unique
-  passwordHash String
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  memberships  WorkspaceMember[]
+  id               String            @id @default(cuid())
+  name             String
+  email            String            @unique
+  passwordHash     String
+  refreshTokenHash String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  memberships      WorkspaceMember[]
 }
 
 model Workspace {
